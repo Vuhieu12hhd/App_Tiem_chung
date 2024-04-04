@@ -1,9 +1,12 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:injection_schedule/main.dart';
 import 'package:injection_schedule/network/dio_exception.dart';
 import 'package:injection_schedule/network/dio_restfu.dart';
+import 'package:injection_schedule/screens/booking_screen/models/user.dart';
 import 'package:injection_schedule/screens/login/login_screen.dart';
+import 'package:injection_schedule/utils/tab_bar.dart';
 import 'package:intl/intl.dart';
 
 import '../../secure_storage.dart';
@@ -69,30 +72,36 @@ class _SignInPageState extends State<SignInPage> {
 
   Future<int?> onPressSignUp() async {
     String error = DioExceptions.DEFAULT;
-    Response? response;
     try {
-      response = await Dio(DioRestFull().baseOptions())
-          .post(DioRestFull().signIn, data: {
+      final response =
+          await DioRestFull.instance.dio.post(DioRestFull().signIn, data: {
         'id': 0,
-        'Ten': _usernameController.text,
-        'DiaChi': _addressController.text,
-        'soDt': int.parse(_phoneController.text),
-        'Email': _emailController.text,
-        'DateTime': selectedDatePost,
-        'GioiTinh': _selectedGennder,
+        'name': _usernameController.text,
+        'address': _addressController.text,
+        'phone_number': _phoneController.text,
+        'email': _emailController.text,
+        'dob': selectedDatePost,
+        'gender': _selectedGennder,
         'Cccd': _idPesonController.text,
-        'MatKhau': _passwordController.text,
+        'password': _passwordController.text,
       }).catchError((onError) {
         error = DioExceptions.messageError(onError);
-        print(error);
+        throw Exception();
       });
-    } catch (error) {}
-    if (response != null) {
-      // await SercureStorageApp().SaveValue('id', response.data['id'].toString());
-      return   response.data['id'];
-    }else{
+      final user = User.fromMap(response.data['result']['user']);
+      await Future.wait([
+        MyApp.of(context)
+            .localStorage
+            .storeToken(response.data['result']['accessToken']),
+        MyApp.of(context).localStorage.storeId(user.id ?? -1)
+      ]);
+      MyApp.of(context).myAccount = user;
+      return user.id;
+    } catch (error) {
       return null;
     }
+
+    // await SercureStorageApp().SaveValue('id', response.data['id'].toString());
   }
 
   Future<void> _selectDate(BuildContext context) async {
@@ -110,14 +119,16 @@ class _SignInPageState extends State<SignInPage> {
       });
     }
   }
-  bool isEmail(String em) {
 
-    String p = r'^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$';
+  bool isEmail(String em) {
+    String p =
+        r'^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$';
 
     RegExp regExp = new RegExp(p);
 
     return regExp.hasMatch(em);
   }
+
   @override
   Widget build(BuildContext context) {
     return SafeArea(
@@ -140,7 +151,8 @@ class _SignInPageState extends State<SignInPage> {
                     width: getWidthDevice(context),
                     margin: const EdgeInsets.only(top: 100, left: 8, right: 8),
                     decoration: BoxDecoration(
-                        borderRadius: const BorderRadius.all(Radius.circular(8)),
+                        borderRadius:
+                            const BorderRadius.all(Radius.circular(8)),
                         color: Colors.white,
                         boxShadow: [
                           BoxShadow(
@@ -217,7 +229,6 @@ class _SignInPageState extends State<SignInPage> {
                                   color: Colors.black,
                                 ),
                               ),
-
                               icon: Icon(Icons.add_call)),
                           validator: (String? value) {
                             return value!.isEmpty
@@ -239,8 +250,9 @@ class _SignInPageState extends State<SignInPage> {
                               icon: Icon(Icons.attach_email_outlined)),
                           validator: (String? value) {
                             return value!.isEmpty
-                                ?!isEmail(value)?'Email không chính xác'
-                                : 'Bạn chưa nhập email'
+                                ? !isEmail(value)
+                                    ? 'Email không chính xác'
+                                    : 'Bạn chưa nhập email'
                                 : null;
                           },
                           onChanged: (content) {},
@@ -256,7 +268,8 @@ class _SignInPageState extends State<SignInPage> {
                             ),
                             const Text(
                               'Ngày sinh*',
-                              style: TextStyle(color: Colors.black, fontSize: 16),
+                              style:
+                                  TextStyle(color: Colors.black, fontSize: 16),
                             ),
                             const SizedBox(
                               width: 10,
@@ -296,7 +309,8 @@ class _SignInPageState extends State<SignInPage> {
                             ),
                             const Text(
                               'Giới tính*',
-                              style: TextStyle(color: Colors.black, fontSize: 16),
+                              style:
+                                  TextStyle(color: Colors.black, fontSize: 16),
                             ),
                             const SizedBox(
                               width: 10,
@@ -352,7 +366,6 @@ class _SignInPageState extends State<SignInPage> {
                                 ),
                               ),
                               icon: const Icon(Icons.key),
-
                               suffixIcon: IconButton(
                                 icon: Icon(_seePass
                                     ? Icons.visibility_off
@@ -377,33 +390,36 @@ class _SignInPageState extends State<SignInPage> {
                             onPressed: () async {
                               validateAndSave();
                               if (_usernameController.text.isNotEmpty &&
-                                  _passwordController.text.isNotEmpty
-                              &&_addressController.text.isNotEmpty
-                              &&_phoneController.text.isNotEmpty
-                              &&_emailController.text.isNotEmpty
-                              &&_idPesonController.text.isNotEmpty) {
+                                  _passwordController.text.isNotEmpty &&
+                                  _addressController.text.isNotEmpty &&
+                                  _phoneController.text.isNotEmpty &&
+                                  _emailController.text.isNotEmpty &&
+                                  _idPesonController.text.isNotEmpty) {
                                 _ShowDialog();
-                                onPressSignUp().then((value) {
-                                  Navigator.of(context).pop();
-                                  if(value!=null){
-                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                      content: Text("Đăng ký thành công"),
-                                    ));
-                                    Navigator.pushReplacement(
-                                        context,
-                                        MaterialPageRoute(
-                                            builder: (_) => const LoginPage()));
-                                  }else{
-                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                      content: Text("Thất bại! Vui lòng thử lại"),
-                                    ));
-                                  }
 
-                                });
+                                final result = await onPressSignUp();
+                                Navigator.of(context).pop();
+
+                                if (result != null) {
+                                  print("onPressSignUp sucess");
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(SnackBar(
+                                    content: Text("Đăng ký thành công"),
+                                  ));
+                                  Navigator.pushReplacement(
+                                      context,
+                                      MaterialPageRoute(
+                                          builder: (_) => const TabBarMain()));
+                                } else {
+                                  ScaffoldMessenger.of(context)
+                                      .showSnackBar(SnackBar(
+                                    content: Text("Thất bại! Vui lòng thử lại"),
+                                  ));
+                                }
                               }
                             },
                             style: ElevatedButton.styleFrom(
-                              primary: Colors.blueAccent,
+                              // primary: Colors.blueAccent,
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 8),
                             ),
@@ -424,7 +440,7 @@ class _SignInPageState extends State<SignInPage> {
                                       builder: (_) => const LoginPage()));
                             },
                             style: ElevatedButton.styleFrom(
-                              primary: Colors.grey,
+                              // primary: Colors.grey,
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 8),
                             ),

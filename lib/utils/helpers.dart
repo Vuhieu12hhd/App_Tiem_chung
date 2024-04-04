@@ -1,4 +1,5 @@
-
+import 'package:flutter/material.dart';
+import 'package:injection_schedule/main.dart';
 import 'package:intl/intl.dart';
 
 String getFormattedDate(String date) {
@@ -17,6 +18,7 @@ String getFormattedDate(String date) {
 
   return outputDate.toString();
 }
+
 String getFormattedDateTime(String date) {
   /// Convert into local date format.
   var localDate = DateTime.parse(date).toLocal();
@@ -34,3 +36,26 @@ String getFormattedDateTime(String date) {
   return outputDate.toString();
 }
 
+void showLoading() {
+  AlertDialog alert = AlertDialog(
+    content: Row(children: [
+      // const CircularProgressIndicator(
+      //   backgroundColor: Colors.red,
+      // ),
+      Container(
+          margin: const EdgeInsets.only(left: 7),
+          child: const Text("Loading...")),
+    ]),
+  );
+  showDialog(
+    barrierDismissible: false,
+    context: navigatorKey.currentContext!,
+    builder: (BuildContext context) {
+      return alert;
+    },
+  );
+}
+
+void hideLoading() {
+  Navigator.pop(navigatorKey.currentContext!);
+}

@@ -24,8 +24,7 @@ class ProfileBloc extends Bloc<ProfileEvent, ProfileState> {
     String id = await SercureStorageApp().GetValueData('id');
     print('id$id');
     try {
-      response = await Dio(DioRestFull().baseOptions()).get(
-          DioRestFull().profile,
+      response = await DioRestFull.instance.dio.get(DioRestFull().profile,
           queryParameters: {'idKh': int.parse(id)}).catchError((onError) {
         error = DioExceptions.messageError(onError);
       });

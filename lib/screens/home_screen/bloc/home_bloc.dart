@@ -15,9 +15,8 @@ part 'home_state.dart';
 class HomeBloc extends Bloc<HomeEvent, HomeState> {
   HomeBloc() : super(HomeInitial()) {
     on<HomeVacxin>(_onVacxin);
-    }
+  }
 }
-
 
 Future<void> _onVacxin(HomeVacxin event, Emitter<HomeState> emit) async {
   const _delay = Duration(milliseconds: 800);
@@ -26,19 +25,21 @@ Future<void> _onVacxin(HomeVacxin event, Emitter<HomeState> emit) async {
   Response? response;
   String error = DioExceptions.DEFAULT;
   try {
-    response = await Dio(DioRestFull().baseOptions()).get(DioRestFull().bookingList).catchError((onError){
-      error=DioExceptions.messageError(onError);
+    response = await DioRestFull.instance.dio
+        .get(DioRestFull().bookingList)
+        .catchError((onError) {
+      error = DioExceptions.messageError(onError);
     });
     print('aaaa${response.data}');
-  }
-  catch (error) {
+  } catch (error) {
     emit(HomeError(error.toString()));
   }
-  if(response!=null){
+  if (response != null) {
     print('aaaa${response.data}');
-    List<BookingModel> vacxinList = List<BookingModel>.from(response.data.map((e)=>BookingModel.fromJson(e)));
+    List<BookingModel> vacxinList = List<BookingModel>.from(
+        response.data.map((e) => BookingModel.fromJson(e)));
     emit(BookingLoaded(vacxinList));
-  }else{
+  } else {
     emit(BookingError(error));
   }
 }

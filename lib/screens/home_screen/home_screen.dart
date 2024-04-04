@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:injection_schedule/network/dio_exception.dart';
 import 'package:injection_schedule/network/dio_restfu.dart';
+import 'package:injection_schedule/screens/booking_screen/models/vaccine_booking.dart';
 import 'package:injection_schedule/screens/home_screen/bloc/home_bloc.dart';
 import 'package:injection_schedule/screens/home_screen/models/Booking_model.dart';
 import 'package:injection_schedule/utils/helpers.dart';
@@ -19,9 +20,34 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeState extends State<HomeScreen> {
+  bool isHo = false;
+  bool isSot = false;
+
+  final vaccines = <Vaccine>[];
+  Vaccine? vaccine = null;
+
   @override
   void initState() {
     BlocProvider.of<HomeBloc>(context).add(HomeVacxin());
+    onGetVaccines();
+  }
+
+  Future<void> onGetVaccines() async {
+    final response = await DioRestFull.instance.dio.get(DioRestFull().vaccines);
+    final items = response.data['result']['items'] as List;
+    vaccines.addAll(items.map((json) => Vaccine.fromJson(json)).toList());
+    setState(() {});
+  }
+
+  void onChangeHo() {
+    setState(() {
+      isHo = !isHo;
+    });
+  }
+
+  void onChangeSot() {
+    isSot = !isSot;
+    setState(() {});
   }
 
   String? _selectedOption = 'Option 1';
@@ -39,18 +65,28 @@ class _HomeState extends State<HomeScreen> {
     'CS4 - Hồ Chí Minh',
   ];
   void datLich() async {
+    if (selectedDate == null || vaccine == null || _selectedAddress == null) {
+      return;
+    }
     String error = DioExceptions.DEFAULT;
     Response? response;
     print('selectedDate${getFormattedDateTime(selectedDate.toString())}}');
     print('_selectedAddress${_selectedAddress.toString()}');
     try {
-      response = await Dio(DioRestFull().baseOptions())
-          .post(DioRestFull().PostBooking, data: {
-        'idKh': SercureStorageApp().GetValueData('id'),
-        'thoiGian':
-            '${getFormattedDateTime(selectedDate.toString())}T13:49:24.981Z',
-        'diaDiem': _selectedAddress,
-        'idVacXin': booking.id
+      response = await DioRestFull.instance.dio
+          .post(DioRestFull().vaccinationSchedule, data: {
+        "date": getFormattedDateTime(selectedDate.toString()),
+        "vaccine_id": vaccine?.id,
+        "address": _selectedAddress,
+        "healthSurveyAnswers": [
+          {"healthSurveyTemplateId": 1, "choice": isHo ? 1 : 0},
+          {"healthSurveyTemplateId": 2, "choice": isSot ? 1 : 0}
+        ]
+        // 'idKh': SercureStorageApp().GetValueData('id'),
+        // 'thoiGian':
+        //     '${getFormattedDateTime(selectedDate.toString())}T13:49:24.981Z',
+        // 'diaDiem': _selectedAddress,
+        // 'idVacXin': booking.id
       }).catchError((onError) {
         error = DioExceptions.messageError(onError);
         print(error);
@@ -99,37 +135,51 @@ class _HomeState extends State<HomeScreen> {
               const SizedBox(
                 width: 10,
               ),
-              BlocBuilder<HomeBloc, HomeState>(
-                builder: (context, state) {
-                  if (state is HomeError) {
-                    return const Center(child: Text('Error'));
-                  } else if (state is BookingLoading) {
-                    return const Center(child: Text('Loading'));
-                  } else if (state is BookingLoaded) {
-                    print(state);
-                    if (!loadFirst) {
-                      booking = state.vacxin.first;
-                      loadFirst = true;
-                    }
-                    return DropdownButton(
-                      value: booking,
-                      items: state.vacxin.map((BookingModel option) {
-                        return DropdownMenuItem<BookingModel>(
-                          value: option,
-                          child: Text(option.ten ?? ''),
-                        );
-                      }).toList(),
-                      onChanged: (newValue) {
-                        setState(() {
-                          booking = newValue!;
-                        });
-                      },
-                    );
-                  }
-
-                  return Container();
+              DropdownButton(
+                value: vaccine,
+                items: vaccines.map((Vaccine option) {
+                  return DropdownMenuItem<Vaccine>(
+                    value: option,
+                    child: Text(option.name ?? ''),
+                  );
+                }).toList(),
+                onChanged: (newValue) {
+                  setState(() {
+                    vaccine = newValue!;
+                  });
                 },
-              ),
+              )
+              // BlocBuilder<HomeBloc, HomeState>(
+              //   builder: (context, state) {
+              //     if (state is HomeError) {
+              //       return const Center(child: Text('Error'));
+              //     } else if (state is BookingLoading) {
+              //       return const Center(child: Text('Loading'));
+              //     } else if (state is BookingLoaded) {
+              //       print(state);
+              //       if (!loadFirst) {
+              //         booking = state.vacxin.first;
+              //         loadFirst = true;
+              //       }
+              //       return DropdownButton(
+              //         value: booking,
+              //         items: state.vacxin.map((BookingModel option) {
+              //           return DropdownMenuItem<BookingModel>(
+              //             value: option,
+              //             child: Text(option.ten ?? ''),
+              //           );
+              //         }).toList(),
+              //         onChanged: (newValue) {
+              //           setState(() {
+              //             booking = newValue!;
+              //           });
+              //         },
+              //       );
+              //     }
+
+              //     return Container();
+              //   },
+              // ),
               // DropdownButton<String>(
               //   value: _selectedOption,
               //   items: _options.map((String option) {
@@ -201,6 +251,8 @@ class _HomeState extends State<HomeScreen> {
                     },
                   ),
                 ]),
+                _buildCheckBoxText(isHo, 'Ho', onChangeHo),
+                _buildCheckBoxText(isSot, 'Sốt', onChangeSot),
                 ElevatedButton(
                   onPressed: datLich,
                   child: const Text('Đăt lịch'),
@@ -210,6 +262,18 @@ class _HomeState extends State<HomeScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildCheckBoxText(
+      bool value, String text, void Function() onChanged) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Checkbox(value: value, onChanged: (val) => onChanged()),
+        SizedBox(width: 12),
+        Text(text)
+      ],
     );
   }
 

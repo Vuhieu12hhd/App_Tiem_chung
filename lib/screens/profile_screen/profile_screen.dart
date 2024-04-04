@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:injection_schedule/screens/login/login_screen.dart';
 import 'package:injection_schedule/secure_storage.dart';
 import 'package:injection_schedule/utils/helpers.dart';
 
@@ -28,28 +29,35 @@ class _ProfileState extends State<ProfileScreen> {
         title: Text('Thông tin cá nhân'),
         backgroundColor: const Color(0xff1a4b6c),
         actions: [
-          IconButton(onPressed: () async{
-            await SercureStorageApp().ClearCacheApp();
-            RestartWidget.restartApp(context);
-          }, icon: Icon(Icons.login))
+          IconButton(
+              onPressed: () async {
+                MyApp.of(context)..clearAll();
+
+                Navigator.of(context).popAndPushNamed(LoginPage.routerName);
+                // await SercureStorageApp().ClearCacheApp();
+                // RestartWidget.restartApp(context);
+              },
+              icon: Icon(Icons.login))
         ],
       ),
-      body: BlocBuilder<ProfileBloc, ProfileState>(builder: (context, state) {
-        if (state is ProfileError) {
-          return Center(child: Text('Error'));
-        } else if (state is ProfileLoading) {
-          return Center(child: Text('Loading'));
-        } else if (state is ProfileLoaded) {
-          print(state.personInfo.id ?? '');
-          return InforLoaded(context, state);
-        }
-        return Container();
-      }),
+      body: InforLoaded(context),
+      // body: BlocBuilder<ProfileBloc, ProfileState>(builder: (context, state) {
+      //   if (state is ProfileError) {
+      //     return Center(child: Text('Error'));
+      //   } else if (state is ProfileLoading) {
+      //     return Center(child: Text('Loading'));
+      //   } else if (state is ProfileLoaded) {
+      //     print(state.personInfo.id ?? '');
+      //     return InforLoaded(context, state);
+      //   }
+      //   return Container();
+      // }),
     );
   }
 }
 
-Widget InforLoaded(BuildContext context, ProfileLoaded state) {
+Widget InforLoaded(BuildContext context) {
+  final account = MyApp.of(context).myAccount;
   return SingleChildScrollView(
     child: Padding(
       padding: EdgeInsets.all(3),
@@ -63,42 +71,41 @@ Widget InforLoaded(BuildContext context, ProfileLoaded state) {
                 width: 200,
                 height: 200,
               ),
-
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Container(
                       padding: new EdgeInsets.only(right: 13.0),
                       child: Text(
-                        'Tên:${state.personInfo.ten ?? ''}',
+                        'Tên:${account?.name ?? ''}',
                         overflow: TextOverflow.ellipsis,
                       )),
                   SizedBox(
                     height: 5,
                   ),
-                  Text('Giới tính: ${state.personInfo.gioiTinh ?? ''}'),
+                  Text('Giới tính: ${account?.gender ?? ''}'),
                   SizedBox(
                     height: 5,
                   ),
-                  Container(
-                      padding: EdgeInsets.only(right: 13.0),
-                      child: Text(
-                        'Ngày sinh:${getFormattedDate(state.personInfo.ngaySinh.toString()) ?? ''}',
-                        overflow: TextOverflow.ellipsis,
-                      )),
+                  // Container(
+                  //     padding: EdgeInsets.only(right: 13.0),
+                  //     child: Text(
+                  //       'Ngày sinh:${getFormattedDate(account?.dob ?? '') ?? ''}',
+                  //       overflow: TextOverflow.ellipsis,
+                  //     )),
                 ],
               )
             ],
           ),
-          Text('Số điện thoại :${state.personInfo.soDt ?? ''}'),
+          Text('Số điện thoại :${account?.phoneNumber ?? ''}'),
           SizedBox(
             height: 5,
           ),
-          Text('Địa chỉ: ${state.personInfo.diaChi ?? ''}'),
+          Text('Địa chỉ: ${account?.address ?? ''}'),
           SizedBox(
             height: 5,
           ),
-          Text('Email: ${state.personInfo.email ?? ''}'),
+          Text('Email: ${account?.email ?? ''}'),
         ],
       ),
     ),

@@ -8,12 +8,13 @@ class BookingInitial extends BookingState {}
 class BookingLoading extends BookingState {}
 
 class BookingLoaded extends BookingState {
-  final List<History> history;
+  // final List<History> history;
+  final List<VaccineBooking> vaccineBooking;
 
   @override
-  List<Object>? get props => history;
+  List<Object>? get props => [vaccineBooking];
 
-  BookingLoaded(this.history);
+  BookingLoaded(this.vaccineBooking);
 }
 
 class BookingError extends BookingState {

@@ -1,8 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:injection_schedule/main.dart';
 import 'package:injection_schedule/network/dio_exception.dart';
 import 'package:injection_schedule/network/dio_restfu.dart';
+import 'package:injection_schedule/screens/booking_screen/models/user.dart';
 import 'package:injection_schedule/screens/sign_in/sign_in_screen.dart';
 import 'package:injection_schedule/utils/tab_bar.dart';
 
@@ -27,23 +29,15 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   double getWidthDevice(BuildContext context) {
-    return MediaQuery
-        .of(context)
-        .size
-        .width;
+    return MediaQuery.of(context).size.width;
   }
 
   double getHeightDevice(BuildContext context) {
-    return MediaQuery
-        .of(context)
-        .size
-        .height;
+    return MediaQuery.of(context).size.height;
   }
 
   bool checkLandscape(BuildContext context) {
-    return MediaQuery
-        .of(context)
-        .orientation == Orientation.landscape;
+    return MediaQuery.of(context).orientation == Orientation.landscape;
   }
 
   bool _seePass = false;
@@ -67,20 +61,26 @@ class _LoginPageState extends State<LoginPage> {
     String error = DioExceptions.DEFAULT;
     Response? response;
     try {
-      response = await Dio(DioRestFull().baseOptions())
-          .get(DioRestFull().login, queryParameters: {
-        'sodt': int.parse(_usernameController.text),
-        'password': _passwordController.text
-      }).catchError((onError) {
+      response = await DioRestFull.instance.dio.post(DioRestFull().login,
+          data: {
+            'email': _usernameController.text,
+            'password': _passwordController.text
+          }).catchError((onError) {
         error = DioExceptions.messageError(onError);
         print(error);
       });
     } catch (error) {}
     if (response != null) {
-      print(response.data['id']);
-      await SercureStorageApp().SaveValue('id', response.data['id'].toString());
-      return response.data['id'];
-    }else{
+      final user = User.fromMap(response.data['result']['user']);
+      await Future.wait([
+        MyApp.of(context)
+            .localStorage
+            .storeToken(response.data['result']['accessToken']),
+        MyApp.of(context).localStorage.storeId(user.id ?? -1)
+      ]);
+      MyApp.of(context).myAccount = user;
+      return user.id;
+    } else {
       return null;
     }
   }
@@ -107,7 +107,8 @@ class _LoginPageState extends State<LoginPage> {
                     width: getWidthDevice(context),
                     margin: const EdgeInsets.only(top: 220, left: 8, right: 8),
                     decoration: BoxDecoration(
-                        borderRadius: const BorderRadius.all(Radius.circular(8)),
+                        borderRadius:
+                            const BorderRadius.all(Radius.circular(8)),
                         color: Colors.white,
                         boxShadow: [
                           BoxShadow(
@@ -136,24 +137,16 @@ class _LoginPageState extends State<LoginPage> {
                         ),
                         TextFormField(
                           controller: _usernameController,
-                          keyboardType: TextInputType.phone,
                           decoration: const InputDecoration(
-                              label: Text('Số điện thoại*'),
-                              icon: Icon(Icons.person),
+                            label: Text('Email*'),
+                            icon: Icon(Icons.person),
                           ),
                           validator: (value) {
                             return value!.isEmpty
                                 ? 'Bạn chưa nhập tài khoản'
                                 : null;
                           },
-                          onChanged: (content) {
-
-                          },
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                            LengthLimitingTextInputFormatter(11),
-                            FilteringTextInputFormatter.deny(RegExp(r' ')),
-                          ],
+                          onChanged: (content) {},
                         ),
                         const SizedBox(
                           height: 16,
@@ -195,17 +188,19 @@ class _LoginPageState extends State<LoginPage> {
                                 _ShowDialog();
                                 onPressLogin().then((value) {
                                   Navigator.of(context).pop();
-                                  if(value!=null){
+                                  if (value != null) {
                                     Navigator.pushReplacement(
                                         context,
                                         MaterialPageRoute(
-                                            builder: (_) => const TabBarMain()));
-                                  }else{
-                                        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                          content: Text("Tài khoản hoặc mật khẩu không đúng !"),
-                                        ));
+                                            builder: (_) =>
+                                                const TabBarMain()));
+                                  } else {
+                                    ScaffoldMessenger.of(context)
+                                        .showSnackBar(SnackBar(
+                                      content: Text(
+                                          "Tài khoản hoặc mật khẩu không đúng !"),
+                                    ));
                                   }
-
                                 });
                                 // _presenter.doLogin(
                                 //     username: _usernameController.text,
@@ -225,7 +220,7 @@ class _LoginPageState extends State<LoginPage> {
                               }
                             },
                             style: ElevatedButton.styleFrom(
-                              primary: Colors.blueAccent,
+                              // primary: Colors.blueAccent,
                               padding: const EdgeInsets.symmetric(
                                   horizontal: 8, vertical: 8),
                             ),
@@ -242,14 +237,15 @@ class _LoginPageState extends State<LoginPage> {
                             Text("Bạn chưa có tài khoản?"),
                             TextButton(
                                 onPressed: () => {
-                                Navigator.pushReplacement(
-                                context,
-                                MaterialPageRoute(
-                                builder: (_) => const SignInPage()))
-                            }, child: Text("Đăng ký"))
+                                      Navigator.pushReplacement(
+                                          context,
+                                          MaterialPageRoute(
+                                              builder: (_) =>
+                                                  const SignInPage()))
+                                    },
+                                child: Text("Đăng ký"))
                           ],
                         ),
-
                         const SizedBox(
                           height: 4,
                         ),
