@@ -95,7 +95,7 @@ class _MyAppState extends State<MyApp> {
       ),
       routes: routes,
       initialRoute: widget.localStorage.token.isEmpty
-          ? TabMainScreen.routerName
+          ? LoginPage.routerName
           : TabMainScreen.routerName,
       debugShowCheckedModeBanner: false,
       home: const LoginPage(),
