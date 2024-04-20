@@ -20,6 +20,7 @@ class _TabMainScreen extends State<TabMainScreen> {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
+      resizeToAvoidBottomInset: false,
       body: TabBarMain(),
     );
   }

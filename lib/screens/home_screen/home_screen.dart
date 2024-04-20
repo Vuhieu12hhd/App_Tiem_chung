@@ -8,7 +8,6 @@ import 'package:injection_schedule/screens/home_screen/bloc/home_bloc.dart';
 import 'package:injection_schedule/screens/home_screen/models/Booking_model.dart';
 import 'package:injection_schedule/utils/helpers.dart';
 import 'package:intl/intl.dart';
-import '../../secure_storage.dart';
 
 class HomeScreen extends StatefulWidget {
   static const String routerName = 'HomeScreen';
@@ -28,8 +27,15 @@ class _HomeState extends State<HomeScreen> {
 
   @override
   void initState() {
+    super.initState();
     BlocProvider.of<HomeBloc>(context).add(HomeVacxin());
     onGetVaccines();
+  }
+
+  @override
+  void dispose() {
+    name.dispose();
+    super.dispose();
   }
 
   Future<void> onGetVaccines() async {
@@ -58,6 +64,9 @@ class _HomeState extends State<HomeScreen> {
   bool loadFirst = false;
 
   DateTime? selectedDate;
+  DateTime? dob;
+  final name = TextEditingController();
+  bool isMale = true;
   List<String> _optionsAddress = [
     'CS1 - Hà Nội',
     'CS2 - Huế',
@@ -81,7 +90,12 @@ class _HomeState extends State<HomeScreen> {
         "healthSurveyAnswers": [
           {"healthSurveyTemplateId": 1, "choice": isHo ? 1 : 0},
           {"healthSurveyTemplateId": 2, "choice": isSot ? 1 : 0}
-        ]
+        ],
+        "injector_info": {
+          'name': name.text,
+          'dob': getFormattedDateTime(dob.toString()),
+          'gender': isMale ? 'MALE' : 'FEMALE'
+        }
         // 'idKh': SercureStorageApp().GetValueData('id'),
         // 'thoiGian':
         //     '${getFormattedDateTime(selectedDate.toString())}T13:49:24.981Z',
@@ -119,6 +133,21 @@ class _HomeState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _selectDob(BuildContext context) async {
+    final DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: dob ?? DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+
+    if (pickedDate != null && pickedDate != dob) {
+      setState(() {
+        dob = pickedDate;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -127,6 +156,59 @@ class _HomeState extends State<HomeScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            Row(
+              children: [
+                Text('Tên'),
+                SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                      controller: name,
+                      decoration: InputDecoration(hintText: 'Nhập tên')),
+                ),
+              ],
+            ),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text(
+                  'Ngày sinh:',
+                  style: TextStyle(fontSize: 18),
+                ),
+                const SizedBox(width: 10),
+                Text(
+                  dob != null ? _formatDate(dob!) : 'No date selected',
+                  style: dob != null
+                      ? const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold)
+                      : const TextStyle(
+                          fontSize: 15, fontWeight: FontWeight.normal),
+                ),
+                IconButton(
+                    onPressed: () => _selectDob(context),
+                    icon: const Icon(Icons.arrow_drop_down_outlined)),
+              ],
+            ),
+            Row(
+              children: [
+                Text('Giới tính'),
+                SizedBox(width: 12),
+                Checkbox(
+                    value: isMale,
+                    onChanged: (value) => setState(() {
+                          isMale = true;
+                        })),
+                Text('Nam'),
+                SizedBox(width: 12),
+                Checkbox(
+                    value: !isMale,
+                    onChanged: (value) => setState(() {
+                          isMale = false;
+                        })),
+                Text('Nữ'),
+                SizedBox(width: 12),
+              ],
+            ),
             Row(mainAxisAlignment: MainAxisAlignment.center, children: [
               const Text(
                 'Loại vacxin:',
@@ -135,20 +217,20 @@ class _HomeState extends State<HomeScreen> {
               const SizedBox(
                 width: 10,
               ),
-              DropdownButton(
-                value: vaccine,
-                items: vaccines.map((Vaccine option) {
-                  return DropdownMenuItem<Vaccine>(
-                    value: option,
-                    child: Text(option.name ?? ''),
-                  );
-                }).toList(),
-                onChanged: (newValue) {
-                  setState(() {
-                    vaccine = newValue!;
-                  });
-                },
-              )
+              // DropdownButton(
+              //   value: vaccine,
+              //   items: vaccines.map((Vaccine option) {
+              //     return DropdownMenuItem<Vaccine>(
+              //       value: option,
+              //       child: Text(option.name ?? ''),
+              //     );
+              //   }).toList(),
+              //   onChanged: (newValue) {
+              //     setState(() {
+              //       vaccine = newValue!;
+              //     });
+              //   },
+              // )
               // BlocBuilder<HomeBloc, HomeState>(
               //   builder: (context, state) {
               //     if (state is HomeError) {
