@@ -30,11 +30,11 @@ class _SignInPageState extends State<SignInPage> {
   bool _loadFirst = false;
   DateTime? selectedDate;
   String? selectedDatePost;
-  String? _selectedGennder = 'Nam';
+  String? _selectedGennder = 'MALE';
   GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   List<String> _optionsAddress = [
-    'Nam',
-    'Nữ',
+    'MALE',
+    'FEMALE',
   ];
 
   void validateAndSave() {
@@ -75,14 +75,14 @@ class _SignInPageState extends State<SignInPage> {
     try {
       final response =
           await DioRestFull.instance.dio.post(DioRestFull().signIn, data: {
-        'id': 0,
+        // 'id': 0,
         'name': _usernameController.text,
         'address': _addressController.text,
         'phone_number': _phoneController.text,
         'email': _emailController.text,
         'dob': selectedDatePost,
         'gender': _selectedGennder,
-        'Cccd': _idPesonController.text,
+        // 'Cccd': _idPesonController.text,
         'password': _passwordController.text,
       }).catchError((onError) {
         error = DioExceptions.messageError(onError);

@@ -217,20 +217,20 @@ class _HomeState extends State<HomeScreen> {
               const SizedBox(
                 width: 10,
               ),
-              // DropdownButton(
-              //   value: vaccine,
-              //   items: vaccines.map((Vaccine option) {
-              //     return DropdownMenuItem<Vaccine>(
-              //       value: option,
-              //       child: Text(option.name ?? ''),
-              //     );
-              //   }).toList(),
-              //   onChanged: (newValue) {
-              //     setState(() {
-              //       vaccine = newValue!;
-              //     });
-              //   },
-              // )
+              DropdownButton(
+                value: vaccine,
+                items: vaccines.map((Vaccine option) {
+                  return DropdownMenuItem<Vaccine>(
+                    value: option,
+                    child: Text(option.name ?? ''),
+                  );
+                }).toList(),
+                onChanged: (newValue) {
+                  setState(() {
+                    vaccine = newValue!;
+                  });
+                },
+              )
               // BlocBuilder<HomeBloc, HomeState>(
               //   builder: (context, state) {
               //     if (state is HomeError) {
